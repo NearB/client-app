@@ -59,7 +59,7 @@ class App extends Component {
       return (
         <UserHome
           navigator={navigator}
-          userId={route.userId} 
+          userId={route.userId}
           username={route.username}
           />
       );
@@ -96,6 +96,7 @@ class App extends Component {
       return (
         <CartOrder
           navigator={navigator}
+          cart={route.cart}
           userId={route.userId}
           username={route.username}
           engagementToken={route.engagementToken}

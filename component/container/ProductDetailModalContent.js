@@ -50,12 +50,6 @@ export default class ProductDetailModalContent extends Component {
                 {_s.humanize(this.state.stockProduct.product.description)}
                 TODO: REPLACE MODAL CONTENT WITH MATERIAL DESIGN CARD
               </Text>
-              <Picker
-                selectedValue={this.state.language}
-                onValueChange={(lang) => this.setState({language: lang})}>
-                <Picker.Item label="Java" value="java" />
-                <Picker.Item label="JavaScript" value="js" />
-              </Picker>
               <View style={{flex:0.2, flexDirection:'row',
                  justifyContent:'flex-end',
                  alignItems:'center',

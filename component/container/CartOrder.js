@@ -31,20 +31,25 @@ export default class CartOrder extends Component {
   constructor(props) {
     super(props);
 
-    this.username = props.username;
+    this.cart = props.cart;
     this.userId = props.userId;
+    this.username = props.username;
     this.engagementToken = props.engagementToken;
+    this.products = props.productsForOrder;
 
     console.log({
-      username: this.username,
+      cart: this.cart,
       userId: this.userId,
+      products: this.products,
+      username: this.username,
       engagementToken: this.engagementToken,
-      products: this.products
     });
 
-    if (this.username == null || this.userId == null || this.engagementToken == null || this.products == null){
+    if (this.username == null || this.userId == null || this.engagementToken == null ||
+        this.products == null || this.cart == null){
       throw new Error("LA CONCHA DE TU REPUTA MADRE");
     }
+
     const tokenParts = this.engagementToken.split(':');
     if (this.userId != tokenParts[0]){
       throw new Error(`Invalid token expected [${this.userId}] but was [${tokenParts[0]}]`);
@@ -55,20 +60,24 @@ export default class CartOrder extends Component {
     }
 
     const quantityByProduct = new Map();
-    props.productsForOrder.forEach(p => {quantityByProduct.set(p.product._id, 1)});
+    props.productsForOrder.forEach(p => {quantityByProduct.set(p.product._id, '1')});
 
     this.state = {
       quantityByProduct:  quantityByProduct,
-      products: props.productsForOrder
+      products: props.productsForOrder,
+      total: this._productsTotal(props.productsForOrder)
     };
 
-    this._removeFromCart = this._removeFromCart.bind(this);
+    this.rowIsWhite = false;
+
     this._createCart = this._createCart.bind(this);
     this._order = this._order.bind(this);
     this._updateProdQuantity = this._updateProdQuantity.bind(this);
-    this._addToCart = this._addToCart.bind(this);
-    this._getCartProducts = this._getCartProducts.bind(this);
     this._next = this._next.bind(this);
+  }
+
+  _productsTotal(prods){
+    return prods.reduce((a, b)=> {return (a.price * 1 * a.quantity) + (b.price * 1 * b.quantity)});
   }
 
   _updateProdQuantity(productId, quantity){
@@ -78,27 +87,23 @@ export default class CartOrder extends Component {
     });
   }
 
-  _removeFromCart(product){
-    this.setState({
-      products: this.state.products.splice(this.state.products.indexOf(product), 1)
-    });
-  }
-
   _order(){
     const cart = this._createCart();
     console.log(cart);
-    // service.stores('GET', `${this.storeId}/products`)
-    //   .then((res) => {
-    //     const products = res.data;
-    //     console.log(products);
-    //     this.setState({
-    //       products:
-    //     });
-    //   })
-    //   .catch((error) => {
-    //     console.log(error);
-    //   });
+
+    service.carts('PUT', `${this.cart._id}/products/?engagement=${this.engagementToken}`, {
+      body: JSON.stringify(cart.products)
+    })
+      .then((res) => {
+        console.log(res.data);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+
+    this.props.navigator.pop();
   }
+
 
   _createCart(){
     const cartProducts = [];
@@ -111,7 +116,7 @@ export default class CartOrder extends Component {
     });
 
     const cart = {
-      total: cartProducts.reduce((a, b)=> {return (a.price * a.quantity) + (b.price * b.quantity)}),
+      total: this._productsTotal(cartProducts),
       products: cartProducts
     };
 
@@ -126,43 +131,41 @@ export default class CartOrder extends Component {
           dataSource={ds.cloneWithRows(this.state.products)}
 
           renderRow={ (stockProduct) => {
-            return (
-              <View style={styles.apInfo}>
-                <Image style={{width: 80, height: 80, borderRadius: 40}}
-                  source={{uri: stockProduct.product.img}}/>
-                <View style={{flex:1}}>
-                  <Text style={{marginLeft:15, fontSize: 15, fontWeight: 'bold'}}>
-                    {_s.humanize(stockProduct.product.name)}:
-                  </Text>
-                  <View style={{flex:1, flexDirection:'row'}}>
-                    <Text style={{marginLeft:15, fontSize: 15}}>Price: ${stockProduct.price}</Text>
-                      <Picker
-                        selectedValue={this.state.quantityByProduct.get(stockProduct.product._id)}
-                        onValueChange={(val) => {this._updateProdQuantity(stockProduct.product._id, val)}}>
+            this.rowIsWhite = !this.rowIsWhite;
+            const backColor = this.rowIsWhite ? '#FFFFFF' : '#FFF4E1';
 
-                        {/* TODO HORRIBLE HACK*/}
-                        <Picker.Item value="0"/>
-                        <Picker.Item value="1"/><Picker.Item value="2"/>
-                        <Picker.Item value="3"/><Picker.Item value="4"/>
-                        <Picker.Item value="5"/><Picker.Item value="6"/>
-                        <Picker.Item value="7"/><Picker.Item value="8"/>
-                        <Picker.Item value="9"/><Picker.Item value="10"/>
-                        <Picker.Item value="11"/><Picker.Item value="12"/>
-                      </Picker>
+            return (
+              <View style={{backgroundColor: backColor}}>
+                <View style={styles.apInfo}>
+                  <Image style={{width: 50, height: 50, borderRadius: 25}}
+                    source={{uri: stockProduct.product.img}}/>
+                  <View style={{flex:1}}>
+                    <Text style={{marginLeft:15, fontSize: 15, fontWeight: 'bold'}}>
+                      {_s.humanize(stockProduct.product.name)}:
+                    </Text>
+                    <Text style={{marginLeft:15, fontSize: 15}}>Price: ${stockProduct.price}</Text>
                   </View>
+                  <Picker
+                    style={{ flex: 0.3}}
+                    selectedValue={this.state.quantityByProduct.get(stockProduct.product._id)}
+                    onValueChange={(val) => {this._updateProdQuantity(stockProduct.product._id, val)}}>
+                      <Picker.Item label="1" value="1"/><Picker.Item label="2" value="2"/>
+                      <Picker.Item label="3" value="3"/><Picker.Item label="4" value="4"/>
+                      <Picker.Item label="5" value="5"/><Picker.Item label="6" value="6"/>
+                      <Picker.Item label="7" value="7"/><Picker.Item label="8" value="8"/>
+                      <Picker.Item label="9" value="9"/><Picker.Item label="10" value="10"/>
+                   </Picker>
                 </View>
-                <Icon name="times-circle" style={styles.nonSelectedProductIcon}
-                      allowFontScaling={true}
-                      onPress={() => {this._removeFromCart(stockProduct);}}/>
               </View>
             );
             }
           }
-          renderSeparator={(sectionId, rowId) => <View key={rowId} style={styles.separator} />}
         />
 
-        <Button value="NORMAL RAISED" raised={true} onPress={this.learn.bind(this)}
-                    text='Place Order' theme='light'/>
+      <View style={{margin:15}}>
+        <Button value="NORMAL RAISED" raised={true}  onPress={this._order}
+                      text='Place Order' theme='dark'/>
+      </View>
       </View>
     );
   }
@@ -236,10 +239,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#8E8E8E',
   },
   apInfo: {
-    flex: 0.3,
+    flex: 0.2,
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
+    margin:20,
   },
   actionButtonIcon: {
     fontSize: 20,

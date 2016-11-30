@@ -25,7 +25,6 @@ import NavLeft from '../common/NavigatorLeft';
 const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
 
 
-
 export default class StoreContent extends Component {
 
   constructor(props) {
@@ -62,6 +61,8 @@ export default class StoreContent extends Component {
       peakCart: false
     };
 
+    this.rowIsWhite = false;
+
     this._fetchProducts = this._fetchProducts.bind(this);
     this._selectProduct = this._selectProduct.bind(this);
     this._initCart = this._initCart.bind(this);
@@ -94,7 +95,7 @@ export default class StoreContent extends Component {
   }
 
   _initCart() {
-    service.carts('POST', `&engagement=${this.engagementToken}`)
+    service.carts('POST', `?engagement=${this.engagementToken}`)
       .then((res) => {
         const cart = res.data;
         console.log(cart);
@@ -122,12 +123,14 @@ export default class StoreContent extends Component {
       const route = {
         id: 'CartOrder',
         name: 'CartOrder',
+        cart: this.cart,
         userId: this.userId,
         username: this.username,
         engagementToken: this.engagementToken,
         productsForOrder: products
       };
 
+      this.state.productsForCheckout.clear();
       this._next(route);
     }
   }
@@ -176,33 +179,38 @@ export default class StoreContent extends Component {
           dataSource={this.state.products}
 
           renderRow={ (stockProduct) => {
+
+            this.rowIsWhite = !this.rowIsWhite;
+            const backColor = this.rowIsWhite ? '#FFFFFF' : '#FFF4E1';
+
             return (
-              <TouchableOpacity style={{margin:20}}
+              <TouchableOpacity
                 onPress={() => { this._selectProduct(stockProduct);}}>
-                <View style={styles.apInfo}>
-                  <Image style={{width: 50, height: 50, borderRadius: 25}}
-                    source={{uri: stockProduct.product.img}}/>
-                  <View style={{flex:1}}>
-                    <Text style={{marginLeft:15, fontSize: 15, fontWeight: 'bold'}}>
-                      {_s.humanize(stockProduct.product.name)}:
-                    </Text>
-                    <Text style={{marginLeft:15, fontSize: 15}}>{_s.humanize(stockProduct.product.description)}</Text>
+                <View style={{backgroundColor:backColor}}>
+                  <View style={styles.apInfo}>
+                    <Image style={{width: 50, height: 50, borderRadius: 25}}
+                      source={{uri: stockProduct.product.img}}/>
+                    <View style={{flex:1}}>
+                      <Text style={{marginLeft:15, fontSize: 15, fontWeight: 'bold'}}>
+                        {_s.humanize(stockProduct.product.name)}:
+                      </Text>
+                      <Text style={{marginLeft:15, fontSize: 15}}>{_s.humanize(stockProduct.product.description)}</Text>
+                    </View>
+                    {
+                      this.state.productsForCheckout.get(stockProduct.product._id)
+                        ? <Icon name="check-circle" style={styles.selectedProductIcon}
+                          allowFontScaling={true}
+                          onPress={() => {this._removeFromCart(stockProduct);}}/>
+                        : <Icon name="plus-circle" style={styles.nonSelectedProductIcon}
+                          allowFontScaling={true}
+                          onPress={() => {this._addToCart(stockProduct);}}/>
+                    }
                   </View>
-                  {
-                    this.state.productsForCheckout.get(stockProduct.product._id)
-                      ? <Icon name="check-circle" style={styles.selectedProductIcon}
-                        allowFontScaling={true}
-                        onPress={() => {this._removeFromCart(stockProduct);}}/>
-                      : <Icon name="plus-circle" style={styles.nonSelectedProductIcon}
-                        allowFontScaling={true}
-                        onPress={() => {this._addToCart(stockProduct);}}/>
-                  }
                 </View>
               </TouchableOpacity>
             );
             }
           }
-          renderSeparator={(sectionId, rowId) => <View key={rowId} style={styles.separator} />}
         />
 
       {/*TODO Si pongo el if adentro del CartActionButton, le pinta no andar*/}
@@ -297,6 +305,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
+    margin:20,
   },
   actionButtonIcon: {
     fontSize: 20,
