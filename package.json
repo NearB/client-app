@@ -1,0 +1,24 @@
+{
+  "name": "ClientApp",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "(cd android/ && ./gradlew assembleDebug)",
+    "start": "node node_modules/react-native/local-cli/cli.js start",
+    "bundle-android": "react-native bundle --platform android --dev false --entry-file index.android.js --bundle-output android/app/src/main/assets/index.android.bundle --sourcemap-output android/app/src/main/assets/index.android.map --assets-dest android/app/src/main/res/"
+  },
+  "dependencies": {
+    "react": "^15.2.0",
+    "react-native": "^0.28.0",
+    "react-native-action-button": "^1.1.10",
+    "react-native-button": "^1.7.1",
+    "react-native-keyboard-aware-scroll-view": "^0.1.2",
+    "react-native-material-design": "^0.3.6",
+    "react-native-material-kit": "^0.3.2",
+    "react-native-spinkit": "^0.1.2",
+    "react-native-swiper": "^1.5.4",
+    "react-native-vector-icons": "^3.0.0",
+    "underscore": "^1.8.3",
+    "underscore.string": "^3.3.4"
+  }
+}
