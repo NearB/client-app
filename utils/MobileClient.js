@@ -11,7 +11,7 @@ export default class MobileClient {
 
   constructor(){
     //FIXME find a better way to handle this instead of hardcoded the IP of our docker server
-    this.IP = '192.168.0.102';
+    this.IP = '192.168.0.103';
     this.PORT = '10000';
 
     this.locations.bind(this);

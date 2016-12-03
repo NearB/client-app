@@ -26,7 +26,7 @@ import NavLeft from '../common/NavigatorLeft';
 const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
 
 
-export default class CartOrder extends Component {
+export default class CartCheckout extends Component {
 
   constructor(props) {
     super(props);
@@ -35,18 +35,15 @@ export default class CartOrder extends Component {
     this.userId = props.userId;
     this.username = props.username;
     this.engagementToken = props.engagementToken;
-    this.products = props.productsForOrder;
 
     console.log({
       cart: this.cart,
       userId: this.userId,
-      products: this.products,
       username: this.username,
-      engagementToken: this.engagementToken,
+      engagementToken: this.engagementToken
     });
 
-    if (this.username == null || this.userId == null || this.engagementToken == null ||
-        this.products == null || this.cart == null){
+    if (this.username == null || this.userId == null || this.engagementToken == null || this.cart == null){
       throw new Error("LA CONCHA DE TU REPUTA MADRE");
     }
 
@@ -54,47 +51,49 @@ export default class CartOrder extends Component {
     if (this.userId != tokenParts[0]){
       throw new Error(`Invalid token expected [${this.userId}] but was [${tokenParts[0]}]`);
     }
+
     this.storeId = tokenParts[1];
     if (tokenParts.length > 3){
       this.originAdId = tokenParts[3];
     }
 
-    const quantityByProduct = new Map();
-    props.productsForOrder.forEach(p => {quantityByProduct.set(p.product._id, '1')});
-
     this.state = {
-      quantityByProduct:  quantityByProduct,
-      products: props.productsForOrder,
-      total: this._productsTotal(props.productsForOrder)
+      products: ds.cloneWithRows([]),
+      total: 0
     };
 
     this.rowIsWhite = false;
-
-    this._createCart = this._createCart.bind(this);
-    this._order = this._order.bind(this);
-    this._updateProdQuantity = this._updateProdQuantity.bind(this);
+    this._checkout = this._checkout.bind(this);
+    this._leaveStore = this._leaveStore.bind(this);
   }
 
   _productsTotal(prods){
     return prods.reduce((a, b)=> {return (a.price * 1 * a.quantity) + (b.price * 1 * b.quantity)});
   }
 
-  _updateProdQuantity(productId, quantity){
-    this.state.quantityByProduct.set(productId, quantity);
-    this.setState({
-      quantityByProduct: this.state.quantityByProduct
-    });
-  }
-
-  _order(){
-    const cart = this._createCart();
-    console.log(cart);
-
-    service.carts('PUT', `${this.cart._id}/products/?engagement=${this.engagementToken}`, {
-      body: JSON.stringify(cart.products)
-    })
+  componentDidMount() {
+    service.carts('GET', `${this.cart._id}/products?engagement=${this.engagementToken}`)
       .then((res) => {
         console.log(res.data);
+        const prods = res.data;
+        this.setState({
+          products: ds.cloneWithRows(prods),
+          total: this._productsTotal(prods)
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+  _checkout(){
+    service.carts('PUT', `${this.cart._id}?engagement=${this.engagementToken}`, {
+        body: JSON.stringify({
+          status: 'CHECKOUT'
+        })
+      })
+      .then((res) => {
+        console.log(res.data);
+        this._leaveStore();
       })
       .catch((error) => {
         console.log(error);
@@ -103,23 +102,16 @@ export default class CartOrder extends Component {
     this.props.navigator.pop();
   }
 
-
-  _createCart(){
-    const cartProducts = [];
-    this.state.products.forEach(p => {
-      cartProducts.push({
-        productId: p.product._id,
-        quantity: this.state.quantityByProduct.get(p.product._id),
-        price: p.price
-      })
-    });
-
-    const cart = {
-      total: this._productsTotal(cartProducts),
-      products: cartProducts
+  _leaveStore(){
+    const route = {
+      id: 'UserHome',
+      name: 'UserHome',
+      userId: this.userId,
+      username: this.username
     };
 
-    return cart;
+    console.log(route);
+    this.props.navigator.resetTo(route);
   }
 
   renderScene(route, navigator) {
@@ -127,9 +119,9 @@ export default class CartOrder extends Component {
       <View style={styles.container}>
         <Text style={{marginTop:30}}>SPACER</Text>
         <ListView
-          dataSource={ds.cloneWithRows(this.state.products)}
+          dataSource={this.state.products}
 
-          renderRow={ (stockProduct) => {
+          renderRow={ (cartProduct) => {
             this.rowIsWhite = !this.rowIsWhite;
             const backColor = this.rowIsWhite ? '#FFFFFF' : '#FFF4E1';
 
@@ -137,23 +129,16 @@ export default class CartOrder extends Component {
               <View style={{backgroundColor: backColor}}>
                 <View style={styles.apInfo}>
                   <Image style={{width: 50, height: 50, borderRadius: 25}}
-                    source={{uri: stockProduct.product.img}}/>
+                    source={{uri: cartProduct.product.img}}/>
                   <View style={{flex:1}}>
-                    <Text style={{marginLeft:15, fontSize: 15, fontWeight: 'bold'}}>
-                      {_s.humanize(stockProduct.product.name)}:
+                    <Text style={{marginLeft:15, fontSize: 20, fontWeight: 'bold'}}>
+                      {_s.humanize(cartProduct.product.name)}:
                     </Text>
-                    <Text style={{marginLeft:15, fontSize: 15}}>Price: ${stockProduct.price}</Text>
+                    <View style={{flex:1, flexDirection:'row'}}>
+                      <Text style={{marginLeft:15, fontSize: 15}}>Price: ${cartProduct.price}</Text>
+                      <Text style={{marginLeft:15, fontSize: 15}}>Quantity: {cartProduct.quantity}</Text>
+                    </View>
                   </View>
-                  <Picker
-                    style={{ flex: 0.3}}
-                    selectedValue={this.state.quantityByProduct.get(stockProduct.product._id)}
-                    onValueChange={(val) => {this._updateProdQuantity(stockProduct.product._id, val)}}>
-                      <Picker.Item label="1" value="1"/><Picker.Item label="2" value="2"/>
-                      <Picker.Item label="3" value="3"/><Picker.Item label="4" value="4"/>
-                      <Picker.Item label="5" value="5"/><Picker.Item label="6" value="6"/>
-                      <Picker.Item label="7" value="7"/><Picker.Item label="8" value="8"/>
-                      <Picker.Item label="9" value="9"/><Picker.Item label="10" value="10"/>
-                   </Picker>
                 </View>
               </View>
             );
@@ -161,9 +146,10 @@ export default class CartOrder extends Component {
           }
         />
 
+      {/*TODO LOADING SPINNER*/}
       <View style={{margin:15}}>
-        <Button value="NORMAL RAISED" raised={true}  onPress={this._order}
-                      text='Place Order' theme='dark'/>
+        <Button value="NORMAL RAISED" raised={true}  onPress={this._checkout}
+                      text={'Checkout   $' + this.state.total} theme='dark'/>
       </View>
       </View>
     );

@@ -17,6 +17,7 @@ import StoreDetails from './component/container/StoreDetails';
 import StoreContent from './component/container/StoreContent';
 import PromotionsViewer from './component/container/PromotionsViewer';
 import CartOrder from './component/container/CartOrder';
+import CartCheckout from './component/container/CartCheckout';
 
 var _navigator; // we fill this up upon on first navigation.
 
@@ -101,6 +102,17 @@ class App extends Component {
           username={route.username}
           engagementToken={route.engagementToken}
           productsForOrder={route.productsForOrder}
+          />
+      );
+    }
+    if (routeId === 'CartCheckout') {
+      return (
+        <CartCheckout
+          navigator={navigator}
+          cart={route.cart}
+          userId={route.userId}
+          username={route.username}
+          engagementToken={route.engagementToken}
           />
       );
     }

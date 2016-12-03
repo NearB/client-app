@@ -54,36 +54,37 @@ export default class UserLogin extends Component {
   }
 
   handleSubmit() {
-    console.log(this.user);
-    service.users('GET', this.user)
+    service.users('POST', '', {
+      body: JSON.stringify({
+        username: this.user,
+        name: this.user,
+        stores: [],
+        filters: []
+      })
+    })
     .then(res => {
-      if (res.data != null) {
-        this.userId = res.data._id;
-        this._next();
-      } else {
-        service.users('POST', '', {
-          body: JSON.stringify({
-            username: this.user,
-            name: this.user,
-            stores: [],
-            filters: []
-          })
-        })
-        .then(res => {
-          console.log(res);
-          this.userId = res.data._id;
-          this._next();
-        })
-        .catch(err => {
-          console.log("TOP");
-          console.log(err);
-        });
-      }
+      console.log(res);
+      this.userId = res.data._id;
+      this._next();
     })
     .catch(err => {
-      console.log("BOTOM");
+      console.log("TOP");
       console.log(err);
     });
+    // console.log(this.user);
+    // service.users('GET', this.user)
+    // .then(res => {
+    //   if (res.data != null) {
+    //     this.userId = res.data._id;
+    //     this._next();
+    //   } else {
+    //
+    //   }
+    // })
+    // .catch(err => {
+    //   console.log("BOTOM");
+    //   console.log(err);
+    // });
   }
 
   renderScene(route, navigator) {

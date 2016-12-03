@@ -72,6 +72,7 @@ export default class StoreContent extends Component {
     this._removeFromCart = this._removeFromCart.bind(this);
     this._addToCart = this._addToCart.bind(this);
     this._getCartProducts = this._getCartProducts.bind(this);
+    this._renderActionButton = this._renderActionButton.bind(this);
     this._next = this._next.bind(this);
   }
 
@@ -114,7 +115,17 @@ export default class StoreContent extends Component {
   }
 
   _checkout(){
-    // this._next(true, null);
+      const route = {
+        id: 'CartCheckout',
+        name: 'CartCheckout',
+        cart: this.cart,
+        userId: this.userId,
+        username: this.username,
+        engagementToken: this.engagementToken
+      };
+
+      this.state.productsForCheckout.clear();
+      this._next(route);
   }
 
   _placeOrder(){
@@ -213,23 +224,49 @@ export default class StoreContent extends Component {
           }
         />
 
-      {/*TODO Si pongo el if adentro del CartActionButton, le pinta no andar*/}
-      {
-        this._getCartProducts().length > 0
-        ?
-          <CartActionButton
-            peakHandler={this._peakCart}
-            orderHandler={this._placeOrder}
-            checkoutHandler={this._checkout}
-            />
-          :
-            <ActionButton buttonColor="#808080"
-             position="right"
-             onPress={()=>{}}
-             icon={<Icon name='shopping-cart' size={30} style={{marginRight: 5}} color="#FFFFFF" />}/>
-      }
+      {this._renderActionButton()}
       </View>
     );
+  }
+
+  _renderActionButton(){
+    const items = [];
+    if (this._getCartProducts().length > 0){
+      return (
+        <ActionButton buttonColor="#FA8428"
+             position="right"
+             icon={<Icon name='shopping-cart' size={30} style={{marginRight: 5}} color="#FFFFFF" />}>
+              <ActionButton.Item titleBgColor='#F5FCFF' buttonColor='#53B3F9'
+                  title='Peak'
+                  titleBgColor='F5FCFF'
+                  textStyle={{fontSize: 15, fontWeight: 'bold'}}
+                  onPress={this._peakCart}>
+                    <Icon name="search" style={styles.actionButtonIcon} />
+              </ActionButton.Item>
+              <ActionButton.Item titleBgColor='#F5FCFF' buttonColor='#5367F9'
+                  title='Order'
+                  titleBgColor='F5FCFF'
+                  textStyle={{fontSize: 15, fontWeight: 'bold'}}
+                  onPress={this._placeOrder}>
+                    <Icon name="hand-pointer-o" style={{fontSize: 24, height: 25, color: 'white', }} />
+              </ActionButton.Item>
+            </ActionButton>
+      );
+    } else {
+      return (
+        <ActionButton buttonColor="#FA8428"
+             position="right"
+             icon={<Icon name='shopping-cart' size={30} style={{marginRight: 5}} color="#FFFFFF" />}>
+              <ActionButton.Item titleBgColor='#F5FCFF' buttonColor='#9b59b6'
+                  title='Checkout'
+                  titleBgColor='F5FCFF'
+                  textStyle={{fontSize: 15, fontWeight: 'bold'}}
+                  onPress={this._checkout}>
+                    <Icon name="dollar" style={styles.actionButtonIcon} />
+              </ActionButton.Item>
+            </ActionButton>
+      );
+    }
   }
 
   _next(route) {
