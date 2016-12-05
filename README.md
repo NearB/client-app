@@ -14,6 +14,8 @@ Setup your `ANDROID_HOME`, `ANDROID_NDK` and `adb` path correctly.
 After following the installation steps from [React Native](https://facebook.github.io/react-native/docs/getting-started.html)
 page (with the recommended addons of Watchman, Flow and GradleDaemon) run `npm install` to download all the required modules.
 
+Copy the `config.example.js` to `config.js` and replace your own configuration parameters
+
 Connect your device and run `adb reverse --no-rebind tcp:8081 tcp:8081` to allow the connection of the device to the
 node server using the usb cable.
 

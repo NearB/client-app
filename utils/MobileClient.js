@@ -1,3 +1,14 @@
+let config;
+
+try {
+  config = require('../config');
+} catch (e) {
+  console.error(e);
+  config = {
+    IP: '192.168.0.103',
+    PORT: '10000'
+  }
+}
 
 const DEFAULT_HEADERS = {
   headers: {
@@ -9,10 +20,9 @@ const DEFAULT_HEADERS = {
 
 export default class MobileClient {
 
-  constructor(){
-    //FIXME find a better way to handle this instead of hardcoded the IP of our docker server
-    this.IP = '192.168.0.103';
-    this.PORT = '10000';
+  constructor() {
+    this.IP = config.IP;
+    this.PORT = config.PORT;
 
     this.locations.bind(this);
     this.locate.bind(this);
