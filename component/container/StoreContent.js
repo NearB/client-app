@@ -13,15 +13,14 @@ import {
 import _s from 'underscore.string';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import ActionButton from 'react-native-action-button';
-import {Button} from 'react-native-material-design';
 
 import ProductDetailModalContent from './ProductDetailModalContent';
 import CartPeakModalContent from './CartPeakModalContent';
-import CartActionButton from './CartActionButton';
 
 import MobileClient from '../../utils/MobileClient';
-const service = new MobileClient();
 import NavLeft from '../common/NavigatorLeft';
+
+const service = new MobileClient();
 const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
 
 
@@ -56,9 +55,10 @@ export default class StoreContent extends Component {
 
     this.state = {
       products: ds.cloneWithRows([]),
-      productsForCheckout: new Map(),
+      productsForOrder: new Map(),
       productDetail: null,
-      peakCart: false
+      peakOrder: false,
+      storeName: ''
     };
 
     this.rowIsWhite = false;
@@ -67,18 +67,31 @@ export default class StoreContent extends Component {
     this._selectProduct = this._selectProduct.bind(this);
     this._initCart = this._initCart.bind(this);
     this._checkout = this._checkout.bind(this);
-    this._peakCart = this._peakCart.bind(this);
+    this._peakOrder = this._peakOrder.bind(this);
     this._placeOrder = this._placeOrder.bind(this);
     this._removeFromCart = this._removeFromCart.bind(this);
     this._addToCart = this._addToCart.bind(this);
-    this._getCartProducts = this._getCartProducts.bind(this);
+    this._getOrderProducts = this._getOrderProducts.bind(this);
     this._renderActionButton = this._renderActionButton.bind(this);
     this._next = this._next.bind(this);
   }
 
   componentDidMount() {
+    this._getStoreName();
     this._fetchProducts();
     this._initCart();
+  }
+
+  _getStoreName() {
+    service.stores('GET', `${this.storeId}`)
+        .then((res) => {
+          this.setState({
+            storeName: res.data.name
+          });
+        })
+        .catch((error) => {
+          console.log(error);
+        });
   }
 
   _fetchProducts() {
@@ -96,15 +109,23 @@ export default class StoreContent extends Component {
   }
 
   _initCart() {
-    service.carts('POST', `?engagement=${this.engagementToken}`)
-      .then((res) => {
-        const cart = res.data;
-        console.log(cart);
-        this.cart = cart;
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    if (this.cart != null){
+      return;
+    }
+
+    var resolver;
+    if (this.props.cartId != null){
+      resolver = service.carts('GET', `${this.props.cartId}?engagement=${this.engagementToken}`);
+    } else {
+      resolver = service.carts('POST', `?engagement=${this.engagementToken}`);
+    }
+
+    resolver.then((res) => {
+          this.cart = res.data;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
   }
 
   _selectProduct(stockProduct){
@@ -124,12 +145,12 @@ export default class StoreContent extends Component {
         engagementToken: this.engagementToken
       };
 
-      this.state.productsForCheckout.clear();
+      this.state.productsForOrder.clear();
       this._next(route);
   }
 
   _placeOrder(){
-    const products = this._getCartProducts();
+    const products = this._getOrderProducts();
     if (products.length > 0){
       const route = {
         id: 'CartOrder',
@@ -141,35 +162,36 @@ export default class StoreContent extends Component {
         productsForOrder: products
       };
 
-      this.state.productsForCheckout.clear();
+      this.state.productsForOrder.clear();
       this._next(route);
     }
   }
 
-  _peakCart(){
-    this.setState({peakCart: true});
-  }
-
   _addToCart(stockProduct){
-    this.state.productsForCheckout.set(stockProduct.product._id, stockProduct);
-    this.setState({productsForCheckout: this.state.productsForCheckout});
+    this.state.productsForOrder.set(stockProduct.product._id, stockProduct);
+    this.setState({productsForOrder: this.state.productsForOrder});
   }
 
   _removeFromCart(stockProduct){
-    this.state.productsForCheckout.delete(stockProduct.product._id);
-    this.setState({productsForCheckout: this.state.productsForCheckout});
+    this.state.productsForOrder.delete(stockProduct.product._id);
+    this.setState({productsForOrder: this.state.productsForOrder});
   }
 
-  _getCartProducts(){
+  _peakOrder(){
+    this.setState({peakOrder: true});
+  }
+
+  _getOrderProducts(){
     const selected = [];
-    this.state.productsForCheckout.forEach((v,k) => {
+    this.state.productsForOrder.forEach((v, k) => {
       selected.push(v);
     });
-    console.log(selected);
     return selected;
   }
 
   renderScene(route, navigator) {
+    this.rowIsWhite = false;
+
     return (
       <View style={styles.container}>
         <Text style={{marginTop:30}}>SPACER</Text>
@@ -180,9 +202,9 @@ export default class StoreContent extends Component {
           />
         </Modal>
 
-        <Modal transparent={true} visible={this.state.peakCart} animationType='fade'>
-          <CartPeakModalContent cartProducts={this._getCartProducts()}
-            closeHandler={() => {this.setState({peakCart: false})}}
+        <Modal transparent={true} visible={this.state.peakOrder} animationType='fade'>
+          <CartPeakModalContent cartProducts={this._getOrderProducts()}
+                                closeHandler={() => {this.setState({peakOrder: false})}}
           />
         </Modal>
 
@@ -208,7 +230,7 @@ export default class StoreContent extends Component {
                       <Text style={{marginLeft:15, fontSize: 15}}>{_s.humanize(stockProduct.product.description)}</Text>
                     </View>
                     {
-                      this.state.productsForCheckout.get(stockProduct.product._id)
+                      this.state.productsForOrder.get(stockProduct.product._id)
                         ? <Icon name="check-circle" style={styles.selectedProductIcon}
                           allowFontScaling={true}
                           onPress={() => {this._removeFromCart(stockProduct);}}/>
@@ -224,28 +246,31 @@ export default class StoreContent extends Component {
           }
         />
 
-      {this._renderActionButton()}
+        {this._renderActionButton()}
+
       </View>
     );
   }
 
   _renderActionButton(){
     const items = [];
-    if (this._getCartProducts().length > 0){
+    if (this._getOrderProducts().length > 0){
       return (
         <ActionButton buttonColor="#FA8428"
              position="right"
              icon={<Icon name='shopping-cart' size={30} style={{marginRight: 5}} color="#FFFFFF" />}>
-              <ActionButton.Item titleBgColor='#F5FCFF' buttonColor='#53B3F9'
-                  title='Peak'
-                  titleBgColor='F5FCFF'
+              <ActionButton.Item
+                  titleBgColor='#F5FCFF'
+                  buttonColor='#53B3F9'
+                  title='Peak Order'
                   textStyle={{fontSize: 15, fontWeight: 'bold'}}
-                  onPress={this._peakCart}>
+                  onPress={this._peakOrder}>
                     <Icon name="search" style={styles.actionButtonIcon} />
               </ActionButton.Item>
-              <ActionButton.Item titleBgColor='#F5FCFF' buttonColor='#5367F9'
+              <ActionButton.Item
+                  titleBgColor='#F5FCFF'
+                  buttonColor='#5367F9'
                   title='Order'
-                  titleBgColor='F5FCFF'
                   textStyle={{fontSize: 15, fontWeight: 'bold'}}
                   onPress={this._placeOrder}>
                     <Icon name="hand-pointer-o" style={{fontSize: 24, height: 25, color: 'white', }} />
@@ -257,9 +282,9 @@ export default class StoreContent extends Component {
         <ActionButton buttonColor="#FA8428"
              position="right"
              icon={<Icon name='shopping-cart' size={30} style={{marginRight: 5}} color="#FFFFFF" />}>
-              <ActionButton.Item titleBgColor='#F5FCFF' buttonColor='#9b59b6'
+              <ActionButton.Item buttonColor='#9b59b6'
                   title='Checkout'
-                  titleBgColor='F5FCFF'
+                  titleBgColor='#F5FCFF'
                   textStyle={{fontSize: 15, fontWeight: 'bold'}}
                   onPress={this._checkout}>
                     <Icon name="dollar" style={styles.actionButtonIcon} />
@@ -291,7 +316,7 @@ export default class StoreContent extends Component {
               Title: (route, navigator, index, navState) =>
               { return (
                   <View style={{justifyContent: 'center', alignItems: 'center'}}>
-                    <Text style={styles.barTitle}>Stores</Text>
+                    <Text style={styles.barTitle}>{this.state.storeName}</Text>
                   </View>
                 );
               },
@@ -306,11 +331,6 @@ export default class StoreContent extends Component {
 }
 
 const styles = StyleSheet.create({
-  textfield: {
-    width: 150,
-    marginTop: 32,
-    margin: 10
-  },
   container: {
     flex: 1,
     alignItems: 'stretch',
@@ -326,16 +346,6 @@ const styles = StyleSheet.create({
     marginTop: 15,
     marginLeft: 100,
     color: 'white'
-  },
-  enabledNext: {
-    color: '#FA8428',
-    fontSize: 50,
-    marginTop: 10
-  },
-  separator: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#8E8E8E',
   },
   apInfo: {
     flex: 0.2,

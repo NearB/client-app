@@ -56,7 +56,6 @@ export default class WifiClient {
 
     WifiManager.getScanResults(
       (rawScan) => {
-        console.log(rawScan);
         let apData = _.map(_.values(rawScan), (ap) => {
           return JSON.parse(ap)
         });

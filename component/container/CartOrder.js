@@ -4,27 +4,19 @@ import {
   Text,
   View,
   Image,
-  TouchableOpacity,
   Navigator,
   ListView,
-  Modal,
   Picker
 } from 'react-native';
 
 import _s from 'underscore.string';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import ActionButton from 'react-native-action-button';
 import {Button} from 'react-native-material-design';
 
-import ProductDetailModalContent from './ProductDetailModalContent';
-import CartPeakModalContent from './CartPeakModalContent';
-import CartActionButton from './CartActionButton';
-
 import MobileClient from '../../utils/MobileClient';
-const service = new MobileClient();
 import NavLeft from '../common/NavigatorLeft';
-const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
 
+const service = new MobileClient();
+const ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
 
 export default class CartOrder extends Component {
 
@@ -55,9 +47,9 @@ export default class CartOrder extends Component {
       throw new Error(`Invalid token expected [${this.userId}] but was [${tokenParts[0]}]`);
     }
     this.storeId = tokenParts[1];
-    if (tokenParts.length > 3){
-      this.originAdId = tokenParts[3];
-    }
+    // if (tokenParts.length > 3){
+    //   this.originAdId = tokenParts[3];
+    // }
 
     const quantityByProduct = new Map();
     props.productsForOrder.forEach(p => {quantityByProduct.set(p.product._id, '1')});
@@ -65,7 +57,7 @@ export default class CartOrder extends Component {
     this.state = {
       quantityByProduct:  quantityByProduct,
       products: props.productsForOrder,
-      total: this._productsTotal(props.productsForOrder)
+      total: CartOrder._productsTotal(props.productsForOrder)
     };
 
     this.rowIsWhite = false;
@@ -75,8 +67,8 @@ export default class CartOrder extends Component {
     this._updateProdQuantity = this._updateProdQuantity.bind(this);
   }
 
-  _productsTotal(prods){
-    return prods.reduce((a, b)=> {return (a.price * 1 * a.quantity) + (b.price * 1 * b.quantity)});
+  static _productsTotal(prods){
+    return prods.map(a=> +a.price * +a.quantity).reduce((a, b)=> a+b, 0);
   }
 
   _updateProdQuantity(productId, quantity){
@@ -88,8 +80,6 @@ export default class CartOrder extends Component {
 
   _order(){
     const cart = this._createCart();
-    console.log(cart);
-
     service.carts('PUT', `${this.cart._id}/products/?engagement=${this.engagementToken}`, {
       body: JSON.stringify(cart.products)
     })
@@ -103,7 +93,6 @@ export default class CartOrder extends Component {
     this.props.navigator.pop();
   }
 
-
   _createCart(){
     const cartProducts = [];
     this.state.products.forEach(p => {
@@ -114,15 +103,14 @@ export default class CartOrder extends Component {
       })
     });
 
-    const cart = {
-      total: this._productsTotal(cartProducts),
+    return {
+      total: CartOrder._productsTotal(cartProducts),
       products: cartProducts
     };
-
-    return cart;
   }
 
   renderScene(route, navigator) {
+    this.rowIsWhite = false;
     return (
       <View style={styles.container}>
         <Text style={{marginTop:30}}>SPACER</Text>
@@ -152,7 +140,7 @@ export default class CartOrder extends Component {
                       <Picker.Item label="3" value="3"/><Picker.Item label="4" value="4"/>
                       <Picker.Item label="5" value="5"/><Picker.Item label="6" value="6"/>
                       <Picker.Item label="7" value="7"/><Picker.Item label="8" value="8"/>
-                      <Picker.Item label="9" value="9"/><Picker.Item label="10" value="10"/>
+                      <Picker.Item label="9" value="9"/>
                    </Picker>
                 </View>
               </View>
@@ -163,7 +151,7 @@ export default class CartOrder extends Component {
 
       <View style={{margin:15}}>
         <Button value="NORMAL RAISED" raised={true}  onPress={this._order}
-                      text='Place Order' theme='dark'/>
+                      text={`Place Order for $` + this._createCart().total} theme='dark'/>
       </View>
       </View>
     );
@@ -201,11 +189,6 @@ export default class CartOrder extends Component {
 }
 
 const styles = StyleSheet.create({
-  textfield: {
-    width: 150,
-    marginTop: 32,
-    margin: 10
-  },
   container: {
     flex: 1,
     alignItems: 'stretch',
@@ -222,36 +205,11 @@ const styles = StyleSheet.create({
     marginLeft: 100,
     color: 'white'
   },
-  enabledNext: {
-    color: '#FA8428',
-    fontSize: 50,
-    marginTop: 10
-  },
-  separator: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#8E8E8E',
-  },
   apInfo: {
     flex: 0.2,
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
     margin:20,
-  },
-  actionButtonIcon: {
-    fontSize: 20,
-    height: 22,
-    color: 'white',
-  },
-  selectedProductIcon: {
-    color: '#528AE7',
-    marginLeft: 5,
-    fontSize: 35
-  },
-  nonSelectedProductIcon: {
-    color: '#FEB175',
-    marginLeft: 5,
-    fontSize: 35
   }
 });

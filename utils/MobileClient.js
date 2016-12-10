@@ -31,6 +31,11 @@ export default class MobileClient {
     this._fetch.bind(this);
   }
 
+  engage(relative = ''){
+    const resource = 'engage';
+    return this._fetch('POST', `${resource}${relative}`, {});
+  }
+
   locations(method, relative = '', config ={}){
     const resource = 'locations/';
     return this._fetch(method, `${resource}${relative}`, config);

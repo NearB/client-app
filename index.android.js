@@ -10,11 +10,11 @@ import {
 } from 'react-native';
 
 console.disableYellowBox = true;
-import HomeView from './component/HomeView';
+
 import UserLogin from './component/container/UserLogin';
 import UserHome from './component/container/UserHome';
-import StoreDetails from './component/container/StoreDetails';
 import StoreContent from './component/container/StoreContent';
+import StoresList from './component/container/StoresList';
 import PromotionsViewer from './component/container/PromotionsViewer';
 import CartOrder from './component/container/CartOrder';
 import CartCheckout from './component/container/CartCheckout';
@@ -71,6 +71,8 @@ class App extends Component {
           navigator={navigator}
           userId={route.userId}
           username={route.username}
+          selectedTags= {route.selectedTags}
+          allTags= {route.allTags}
           />
       );
     }
@@ -90,6 +92,16 @@ class App extends Component {
           userId={route.userId}
           username={route.username}
           engagementToken={route.engagementToken}
+          cartId={route.cartId}
+          />
+      );
+    }
+    if (routeId === 'StoresList') {
+      return (
+          <StoresList
+              navigator={navigator}
+              userId={route.userId}
+              username={route.username}
           />
       );
     }

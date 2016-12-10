@@ -4,21 +4,13 @@ import {
   Text,
   View,
   Image,
-  TouchableOpacity,
   Navigator,
   ListView,
   Modal,
-  Picker
 } from 'react-native';
 
 import _s from 'underscore.string';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import ActionButton from 'react-native-action-button';
 import {Button} from 'react-native-material-design';
-
-import ProductDetailModalContent from './ProductDetailModalContent';
-import CartPeakModalContent from './CartPeakModalContent';
-import CartActionButton from './CartActionButton';
 
 import MobileClient from '../../utils/MobileClient';
 const service = new MobileClient();
@@ -43,19 +35,15 @@ export default class CartCheckout extends Component {
       engagementToken: this.engagementToken
     });
 
-    if (this.username == null || this.userId == null || this.engagementToken == null || this.cart == null){
-      throw new Error("LA CONCHA DE TU REPUTA MADRE");
-    }
-
     const tokenParts = this.engagementToken.split(':');
     if (this.userId != tokenParts[0]){
       throw new Error(`Invalid token expected [${this.userId}] but was [${tokenParts[0]}]`);
     }
 
     this.storeId = tokenParts[1];
-    if (tokenParts.length > 3){
-      this.originAdId = tokenParts[3];
-    }
+    // if (tokenParts.length > 3){
+    //   this.originAdId = tokenParts[3];
+    // }
 
     this.state = {
       products: ds.cloneWithRows([]),
@@ -67,18 +55,18 @@ export default class CartCheckout extends Component {
     this._leaveStore = this._leaveStore.bind(this);
   }
 
-  _productsTotal(prods){
-    return prods.reduce((a, b)=> {return (a.price * 1 * a.quantity) + (b.price * 1 * b.quantity)});
+  static _productsTotal(prods){
+    return prods.map(a => +a.price * +a.quantity).reduce((a, b)=> a+b, 0);
   }
 
   componentDidMount() {
     service.carts('GET', `${this.cart._id}/products?engagement=${this.engagementToken}`)
       .then((res) => {
-        console.log(res.data);
         const prods = res.data;
+        const tot = CartCheckout._productsTotal(prods);
         this.setState({
           products: ds.cloneWithRows(prods),
-          total: this._productsTotal(prods)
+          total: tot
         });
       })
       .catch((error) => {
@@ -115,6 +103,7 @@ export default class CartCheckout extends Component {
   }
 
   renderScene(route, navigator) {
+    this.rowIsWhite = false;
     return (
       <View style={styles.container}>
         <Text style={{marginTop:30}}>SPACER</Text>
@@ -146,7 +135,6 @@ export default class CartCheckout extends Component {
           }
         />
 
-      {/*TODO LOADING SPINNER*/}
       <View style={{margin:15}}>
         <Button value="NORMAL RAISED" raised={true}  onPress={this._checkout}
                       text={'Checkout   $' + this.state.total} theme='dark'/>
@@ -187,11 +175,6 @@ export default class CartCheckout extends Component {
 }
 
 const styles = StyleSheet.create({
-  textfield: {
-    width: 150,
-    marginTop: 32,
-    margin: 10
-  },
   container: {
     flex: 1,
     alignItems: 'stretch',
@@ -208,36 +191,11 @@ const styles = StyleSheet.create({
     marginLeft: 100,
     color: 'white'
   },
-  enabledNext: {
-    color: '#FA8428',
-    fontSize: 50,
-    marginTop: 10
-  },
-  separator: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#8E8E8E',
-  },
   apInfo: {
     flex: 0.2,
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
     margin:20,
-  },
-  actionButtonIcon: {
-    fontSize: 20,
-    height: 22,
-    color: 'white',
-  },
-  selectedProductIcon: {
-    color: '#528AE7',
-    marginLeft: 5,
-    fontSize: 35
-  },
-  nonSelectedProductIcon: {
-    color: '#FEB175',
-    marginLeft: 5,
-    fontSize: 35
   }
 });
