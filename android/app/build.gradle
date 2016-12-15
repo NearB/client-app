@@ -123,9 +123,14 @@ android {
             }
         }
     }
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/NOTICE'
+    }
 }
 
 dependencies {
+    compile project(':react-native-lock')
     compile project(':react-native-spinkit')
     compile project(':react-native-material-kit')
     compile project(':react-native-vector-icons')

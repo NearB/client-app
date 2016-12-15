@@ -1,6 +1,7 @@
 package com.fiuba.nearb;
 
 import com.facebook.react.ReactActivity;
+import com.auth0.lock.react.LockReactPackage;
 import com.react.rnspinkit.RNSpinkitPackage;
 import com.github.xinthink.rnmk.ReactMaterialKitPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
@@ -41,6 +42,7 @@ public class MainActivity extends ReactActivity {
         return Arrays.<ReactPackage>asList(
             new WifiManager(),
             new MainReactPackage(),
+            new LockReactPackage(),
             new RNSpinkitPackage(),
             new ReactMaterialKitPackage(),
             new VectorIconsPackage()
